@@ -1,65 +1,68 @@
-import sys
+import sys, csv, os
 
-passwords_lists = {
-    "pc": "Abril2019"
-}
+PASS_TABLE = '.pass.csv'
+PASS_SCHEMA = ['application_name', 'password', 'description']
+passwords_lists = []
 
-def append_password():
+def _initialize_passwords_from_storage():
+    #Inicializamos la base de datos de solo lectura y leemos todo lo que contiene le archivo de bd
+
+    with open(PASS_TABLE, mode = 'r') as f:
+        reader = csv.DictReader(f, fieldnames=PASS_SCHEMA)
+        for row in reader:
+            passwords_lists.append(row)
+
+def _save_passwords_to_storage():
+    tmp_table_pass = '{}.tmp'.format(PASS_TABLE)
+    with open(tmp_table_pass, mode = 'w') as f:
+        writer = csv.DictWriter(f, fieldnames=PASS_SCHEMA)
+        writer.writerows(passwords_lists)
+        #Borramos la tabla primaria
+        os.remove(PASS_TABLE)
+        #Y modificamos el nombre de la temporal
+    os.rename(tmp_table_pass, PASS_TABLE)
+
+
+def append_password(password_new):
     print("-----Agregar llave-------")
-    key = _get_key_from_user()
-    value = _get_value_from_user()
-    if key in passwords_lists:
-        print("Ya existe este valor. ")
+    global passwords_lists
+    if password_new not in passwords_lists:
+        passwords_lists.append(password_new)
     else:
-        passwords_lists[key] = value
-        print("----Guardado OK----")
+        print('La pass ya existe en la base de datos.')
 
 
 def list_passwords():
     print("-----Listas valores-------")
-    for valor in passwords_lists:
-        print(valor)
+    for idx, value in enumerate(passwords_lists):
+        print('{id} | {value}'.format(id=idx, value=value))
     print("--------------------------")
 
-def update_value():
+def update_value(key_to_modify, updated_value):
     print("-----Actualizar valor-------")
-    key_to_modify = _get_key_from_user()
-    updated_value = _get_value_from_user()
+    global passwords_lists
     if key_to_modify in passwords_lists:
-        passwords_lists[key_to_modify] = updated_value
+        index = passwords_lists.index(key_to_modify)
+        passwords_lists[index] = updated_value
     else:
         print("No existe el valor {}".format(key_to_modify))
 
-def delete_key_value():
-    key_to_delete = _get_key_from_user()
-    if key_to_delete in passwords_lists:
-        passwords_lists.pop(key_to_delete)
+def list_password_list():
+    print(passwords_lists)
+
+def delete_key_value(key_to_delete):
+    global passwords_lists
+    if(key_to_delete in passwords_lists):
+        passwords_lists.remove(key_to_delete)
     else:
         print("No existe el valor {}".format(key_to_delete))
 
-def _get_value():
-    key_to_search= _get_key_from_user()
-    if key_to_search in passwords_lists.items():
-        print("*"*50)
-        print (passwords_lists[key_to_search])
-        print("*"*50)
-    else:
-        print("No existe el valor {}".format(key_to_search))
-
-def _get_key_from_user():
-    key_from_user = None
-    while not key_from_user:
-        key_from_user = input("Ingrese la llave: ")
-    
-    return key_from_user
-
-def _get_value_from_user():
-    value_from_user = None
-    while not value_from_user:
-        value_from_user = input("Ingrese el value: ")
-    
-    return value_from_user
-
+def search_value_pass(key_searched):
+    for value in passwords_lists:
+        if(value['application_name']!=key_searched):
+            continue
+        else:
+            return True
 
 def _print_welcome():
     print("Bienvenido a Tus Claves")
@@ -72,22 +75,50 @@ def _print_welcome():
     print("5- Obtener una clave")
     print("X- Salir")
 
+def _get_value_field(field_name):
+    field = None
+    while not field:
+        field = input('Cuál es el valor {}?'.format(field_name))
+    return field
+
+def _get_value_name():
+    return input("Cuál es el nombre de la llave?")
+
+
 if __name__ == '__main__':
+    _initialize_passwords_from_storage()
+
     while True:
         _print_welcome()
         command = input("Ingrese la opción: ")
         if command == '1':
-            append_password()
-            list_passwords()
+            password_field = {
+                'application_name' : _get_value_field('nombre aplicación'),
+                'password' : _get_value_field('password'),
+                'description': _get_value_field('descripción')
+            }
+            append_password(password_field)
         elif command == '2':
             list_passwords()
         elif command == '3':
-            update_value()
+            value_name = _get_value_name()
+            updated_value = input('Cuál es el nuevo nombre del valor?')
+            update_value(value_name, updated_value)
+
         elif command == '4':
-            delete_key_value()
+            value_name = _get_value_name()
+            delete_key_value(value_name)
         elif command == '5':
-            _get_value()
+            value_name = _get_value_field('Valor')
+            found = search_value_pass(value_name)
+            if(found):
+                print(passwords_lists[value_name])
+            else:
+                print("No existe el valor buscado")
+
         elif command.upper() == 'X':
             print("---------SALIR---------")
             break
+
+    _save_passwords_to_storage()
     
