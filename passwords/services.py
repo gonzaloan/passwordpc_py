@@ -5,32 +5,35 @@ class PassValueService:
     def __init__(self, table_name):
         self.table_name = table_name
 
-    def create_passValue(self, passValue):
+    def create_pass_value(self, pass_value):
         with open(self.table_name, mode = 'a') as f:
             writer = csv.DictWriter(f, fieldnames=PassValueModel.schema())
-            writer.writerow(passValue.to_dict())
+            writer.writerow(pass_value.to_dict())
     
-    def list_passValues(self):
+    def list_pass_values(self):
         with open(self.table_name, mode='r') as f:
             reader = csv.DictReader(f, fieldnames=PassValueModel.schema())
             return list(reader)
     
-    def update_passvalue(self, updated_passValue):
-        passValues = self.list_passValues()
-        updated_passValues = []
-        for passvalue in passValues:
-            if passvalue['pid'] == updated_passValue.pid:
-                updated_passValues.append(updated_passValue.to_dict())
+    def update_pass_value(self, updated_pass_value):
+        pass_values = self.list_pass_values()
+        updated_pass_values = []
+        for pass_value in pass_values:
+            if pass_value['pid'] == updated_pass_value.pid:
+                updated_pass_values.append(updated_pass_value.to_dict())
             else:
-                updated_passValues.append(passvalue)
-        self._save_to_disk(updated_passValues)
+                updated_pass_values.append(pass_value)
+        self._save_to_disk(updated_pass_values)
     
-    def _save_to_disk(self, passvalues):
+    def _save_to_disk(self, pass_values):
         tmp_table_name = self.table_name + '.tmp'
-        with open(tmp_table_name) as f:
+        with open(tmp_table_name, mode='w') as f:
             writer = csv.DictWriter(f, fieldnames=PassValueModel.schema())
-            writer.writerows(passvalues)
+            writer.writerows(pass_values)
         os.remove(self.table_name)
         os.rename(tmp_table_name, self.table_name)
 
-            
+    def delete_pass_value(self, pass_value_to_delete):
+        pass_values_list = self.list_pass_values()
+        pass_values_list.remove(pass_value_to_delete[0])
+        self._save_to_disk(pass_values_list)
